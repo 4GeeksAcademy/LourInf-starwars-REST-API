@@ -1,4 +1,8 @@
 from flask_sqlalchemy import SQLAlchemy
+from datetime import datetime
+
+# Here is where we create our DB by creating the model classes (class Users, class Profiles, etc) to represent a User object, Profile Object, etc. in our code 
+# that will correspond to a User table, Profile table, etc in our database.
 
 db = SQLAlchemy()
 
@@ -8,17 +12,20 @@ class Users(db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(80), unique=False, nullable=False)
     is_active = db.Column(db.Boolean(), unique=False, nullable=False)
-    subscrition_date  = db.Column(db.Date)
+    subscription_date  = db.Column(db.DateTime, nullable=False,
+        default=datetime.utcnow)
 
+    # rep method is used to define the string representation of an object.Here it will print a string with the user's email (It's used for debugging)
     def __repr__(self):
         return '<User %r>' % self.email
-
+    
+    # serialize is what we return to our front-end
     def serialize(self):
         # do not serialize the password, its a security breach
         return {"id": self.id, 
                 "email": self.email,
                 "is_active": self.is_active,
-                "subscription_date": self.subscrition_date
+                "subscription_date": self.subscription_date
                 }
     
 class Profiles(db.Model):
@@ -31,7 +38,7 @@ class Profiles(db.Model):
     image_url =  db.Column(db.String(120), nullable=False)
     # 2.3. Clave foránea. Tipo de dato, db.ForeignKey('alias.id')
     # 3.3 One to One
-    users_id = db.Column(db.Integer, db.ForeignKey('users.id'), unique=True)
+    users_id = db.Column(db.Integer, db.ForeignKey('users.id'), unique=True) # 1 profile: 1 user
     # 3. Relaciones. db.relationship(Models)
     users = db.relationship(Users)
 
@@ -85,6 +92,24 @@ class Characters(db.Model):
     homeworld = db.Column(db.String)
     url = db.Column(db.String)
 
+    def __repr__(self):
+        return '<Character: %r>' % self.name
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "description": self.description,
+            "height": self.height,
+            "mass": self.mass,
+            "hair_color": self.hair_color,
+            "skin_color": self.skin_color,
+            "eye_color": self.eye_color,
+            "birth_year": self.birth_year,
+            "gender": self.gender,
+            "homeworld": self.homeworld,
+            "url": self.url
+        }
 
 # Creamos una class que será el Modelo instanciando de Base. Naming convention: PascalCase en plural
 class Planets(db.Model):
@@ -102,6 +127,26 @@ class Planets(db.Model):
     surface_water = db.Column(db.Integer)
     url = db.Column(db.Integer)
 
+    def __repr__(self):
+        return '<Planet: %r>' % self.name
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "description": self.description,
+            "diameter": self.diameter,
+            "rotation_period": self.rotation_period,
+            "orbital_period": self.orbital_period,
+            "gravity": self.gravity,
+            "population": self.population,
+            "climate": self.climate,
+            "terrain": self.terrain,
+            "surface_water": self.surface_water,
+            "url": self.url
+
+        }
+
 # Creamos una class que será el Modelo instanciando de Base. Naming convention: PascalCase en plural
 class FavoriteCharacters(db.Model):
     # 1. Creamos el alias de la tabla __tablename__ . Naming convention: snake_case
@@ -116,6 +161,16 @@ class FavoriteCharacters(db.Model):
     users = db.relationship(Users)
     characters = db.relationship(Characters)
 
+    def __repr__(self):
+        return '<Favourite Characters: %r>' % self.character_id
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "users_id": self.users_id,
+            "characters_id": self.characters_id
+        }
+
 
 class FavoritePlanets(db.Model):
     __tablename__ = 'favorite_planets'
@@ -125,3 +180,15 @@ class FavoritePlanets(db.Model):
     planets_id = db.Column(db.Integer, db.ForeignKey('planets.id'))
     users = db.relationship(Users)
     planets = db.relationship(Planets)
+
+
+    def __repr__(self):
+        return '<Favourite Planets: %r>' % self.planets_id
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "users_id": self.users_id,
+            "planets_id": self.planets_id,
+            "planets": self.planets
+        }

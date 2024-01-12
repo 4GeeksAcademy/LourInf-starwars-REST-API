@@ -1,6 +1,6 @@
 import os
 from flask_admin import Admin
-from models import db, Users, Profiles, Address, Planets, Characters #here we import the tables we want
+from models import db, Users, Profiles, Address, Planets, Characters #1. First we need to import the tables we want
 from flask_admin.contrib.sqla import ModelView
 
 def setup_admin(app):
@@ -9,7 +9,7 @@ def setup_admin(app):
     admin = Admin(app, name='4Geeks Admin', template_mode='bootstrap3')
 
     
-    # Add your models here, for example this is how we add the User model to the admin
+    #2. Create a view: Add your models here, for example this is how we add the User model to the admin
     admin.add_view(ModelView(Users, db.session))
     admin.add_view(ModelView(Profiles, db.session))
     admin.add_view(ModelView(Address, db.session))

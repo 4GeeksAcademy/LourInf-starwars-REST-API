@@ -9,6 +9,7 @@ from flask_cors import CORS
 from utils import APIException, generate_sitemap
 from admin import setup_admin
 from models import db, Users, Planets, Characters #from models import Users
+from datetime import datetime
 
 app = Flask(__name__)
 app.url_map.strict_slashes = False
@@ -44,29 +45,35 @@ def handle_users():
     if request.method == 'GET':
         response_body = {}
         results = {}
+        # Query all users from the database
         users = db.session.execute(db.select(Users)).scalars()
         print(users)
-        # Option 1: For-in: We create an empty variable, iterate through it, and use the append method. Easier.
+        # Option 1: For-in: Firstly, we create an empty list. Secondly, we loop through each user in the users collection. 
+        # Thirdly, for each user (row), it calls the serialize method (which converts the user object into a dictionary), and then appends that dictionary to list.
+        # And lastly, the list (now containing the serialized user data), is assigned to the 'users' key in the results dictionary. 
         list_users = []
         for row in users:
             list_users.append(row.serialize())
-        results['users'] = [row.serialize() for row in users]
-        # Option 2: Comprehension List: We create users, iterate through users, and return a list with the serialization of each one.
-        # results['users'] = [row.serialize() for row in users]
+        results['users'] = list_users # contains a list of dictionaries, where each dictionary represents a user in a serialized format. 
+        # Option 2: Comprehension List: It creates the list_users list and assigns it to the 'users' key in the results dictionary in a single line.
+        # results['users'] = [row.serialize() for row in users] 
+        # we can do the comprehension list in 2 lines too: list_users = [row.serialize() for row in users]
+                                                         # results = {'users': list_users}
         response_body['message'] = 'Users List'
-        response_body['results'] = 'results'
+        response_body['results'] = results
         return response_body, 200
     if request.method == 'POST':
+        response_body = {}
         data = request.json
         print(data)
-        response_body = {}
         # here we write the logic to save the registry in our DB:
-        user = Users(email = data.get('email'),
-                    password = data.get('password'),
-                    is_active = True)
-        db.session.add(user)
-        db.session.commit()
-        response_body ['user'] = user
+        user = Users(email = data.get('email'), # we create a new instance of the Users class and sets different attributes of the new user object to the values obtained from the "email","password",etc keys in the JSON data
+                     password = data.get('password'), 
+                     is_active = True,
+                     subscription_date = datetime.now())
+        db.session.add(user) # Adds the user object (representing a new user), but it's still "pending" of being committed to the actual DB
+        db.session.commit() # Change commited. Now the new user is actually saved in the database
+        response_body ['user'] = user.serialize()
         return response_body, 200
     
 @app.route('/users/<int:user_id>', methods=['GET', 'PUT', 'DELETE'])
@@ -88,27 +95,27 @@ def handle_user(user_id):
         response_body['results'] = results
         return response_body, 200
     if request.method == 'PUT':
+        response_body = {}
+        results = {}
         data = request.json
         user = db.session.execute(db.select(Users).where(Users.id == user_id)).scalar()
         if not user:
             response_body['message'] = 'User does not exist'
             return response_body, 404
-        user.email = data.get('email')
-        db.session.commit()
+        user.email = data.get('email')  # Update the email attribute of the user with the new value
+        db.session.commit()             # commit that change
         results['user'] = user.serialize()     
         response_body['message'] = "User updated"
         response_body['results'] = results
         return response_body, 200
     if request.method == 'DELETE':
-        data = request.json
+        response_body = {}
         user = db.session.execute(db.select(Users).where(Users.id == user_id)).scalar()
         if not user:
             response_body['message'] = 'User does not exist'
             return response_body, 404
         db.session.delete(user)
-        db.session.commit()
-        user.email = data.get('email')
-        results['user'] = user.serialize()     
+        db.session.commit()    
         response_body['message'] = "User removed"
         return response_body, 200
         
@@ -195,6 +202,7 @@ def handle_planet(planet_id):
         response_body['message'] = "Planet removed"
         return response_body, 200
 
+
 #CHARACTERS:
 @app.route('/characters', methods=['GET', 'POST'])
 def handle_characters():
@@ -203,7 +211,11 @@ def handle_characters():
         results = {}
         characters = db.session.execute(db.select(Characters)).scalars() 
         # Option 1: For-in loop
-        list_characters = [row.serialize() for row in characters] 
+        list_characters = []
+        for row in characters:
+            list_characters.append(row.serialize())
+        results['characters'] = list_characters
+        #list_characters = [row.serialize() for row in characters] 
         # Option 2: List comprehension
         # results['characters'] = [row.serialize() for row in characters]
         results['characters'] = list_characters
